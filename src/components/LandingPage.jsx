@@ -95,6 +95,7 @@ const LandingPage = () => {
           <li><button className="custom-button" style={{backgroundColor: 'transparent', border: '1px solid #4b3832'}} onClick={() => handleNav('about')}>About</button></li>
           <li><button className="custom-button" style={{backgroundColor: 'transparent', border: '1px solid #4b3832'}} onClick={() => handleNav('programs')}>Jobs</button></li>
           <li><button className="custom-button" style={{backgroundColor: 'transparent', border: '1px solid #4b3832'}} onClick={() => handleNav('resources')}>Resources</button></li>
+          <li><button className="custom-button" style={{backgroundColor: '#4b3832', border: '1px solid #4b3832'}} onClick={() => navigate('/login')}>Login</button></li>
         </ul>
       </div>
 

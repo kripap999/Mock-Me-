@@ -105,6 +105,7 @@ const ResumeUpload = () => {
           <li><button className="custom-button" style={{backgroundColor: 'transparent', border: '1px solid #4b3832'}} onClick={() => navigate('/?section=about')}>About</button></li>
           <li><button className="custom-button" style={{backgroundColor: 'transparent', border: '1px solid #4b3832'}} onClick={() => navigate('/?section=programs')}>Jobs</button></li>
           <li><button className="custom-button" style={{backgroundColor: 'transparent', border: '1px solid #4b3832'}} onClick={() => navigate('/?section=resources')}>Resources</button></li>
+          <li><button className="custom-button" style={{backgroundColor: '#4b3832', border: '1px solid #4b3832'}} onClick={() => navigate('/login')}>Login</button></li>
         </ul>
       </div>
 
