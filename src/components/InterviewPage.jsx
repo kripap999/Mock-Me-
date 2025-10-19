@@ -23,14 +23,30 @@ const InterviewPage = () => {
   const [interviewerTranscript, setInterviewerTranscript] = useState([]); // array of strings
   const [userTranscriptLive, setUserTranscriptLive] = useState('');
   const [userTranscript, setUserTranscript] = useState([]); // array of strings
+  // Coding editor states for technical questions
+  const [editorLanguage, setEditorLanguage] = useState('javascript');
+  const [editorCode, setEditorCode] = useState('');
+  const [runOutput, setRunOutput] = useState('');
   const navigate = useNavigate();
   const activeStreamRef = useRef(null);
 
   useEffect(() => {
-    // Load questions from localStorage
+    // Load questions from localStorage and append one coding question as Q6
     const storedQuestions = localStorage.getItem('interviewQuestions');
     if (storedQuestions) {
-      setQuestions(JSON.parse(storedQuestions));
+      try {
+        const arr = JSON.parse(storedQuestions) || [];
+        // Ensure we have at least 5 original questions; append coding as the 6th
+        if (arr.length < 6) {
+          arr.push({
+            type: 'technical',
+            text: 'Two Sum: Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target. Assume exactly one solution and you may not use the same element twice.'
+          });
+        }
+        setQuestions(arr);
+      } catch (_) {
+        navigate('/');
+      }
     } else {
       // If no questions found, redirect to landing page
       navigate('/');
@@ -322,6 +338,49 @@ const InterviewPage = () => {
     setCurrentAnswer(e.target.value);
   };
 
+  // Minimal starter template when switching to a technical question
+  useEffect(() => {
+    if (!currentQuestion) return;
+    if (currentQuestion.type === 'technical' && editorCode.trim() === '') {
+      if (editorLanguage === 'javascript') {
+        setEditorCode(`// Write your solution in JavaScript\n// Define your function and test below\nfunction solve() {\n  // TODO: implement\n}\n\n// Example usage:\nsolve();`);
+      } else if (editorLanguage === 'python') {
+        setEditorCode(`# Write your solution in Python\n# Define your function and test below\n\n# def solve():\n#     pass\n\n# Example:\n# solve()`);
+      }
+    }
+  }, [currentQuestion, editorLanguage]);
+
+  const handleRunCode = () => {
+    setRunOutput('');
+    try {
+      if (editorLanguage !== 'javascript') {
+        setRunOutput('Run supported only for JavaScript in the browser.');
+        return;
+      }
+      const logs = [];
+      const originalLog = console.log;
+      try {
+        console.log = (...args) => {
+          logs.push(args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' '));
+        };
+        // eslint-disable-next-line no-new-func
+        const fn = new Function(editorCode);
+        const result = fn();
+        if (typeof result !== 'undefined') logs.push(String(result));
+      } finally {
+        console.log = originalLog;
+      }
+      setRunOutput(logs.join('\n'));
+    } catch (err) {
+      setRunOutput(`Error: ${err.message}`);
+    }
+  };
+
+  const handleResetCode = () => {
+    setEditorCode('');
+    setRunOutput('');
+  };
+
   const handleNext = () => {
     // Save current answer
     const updatedAnswers = {
@@ -450,91 +509,88 @@ const InterviewPage = () => {
 
       {/* Progress removed to avoid scroll */}
 
-      {/* Question Section with video + transcripts layout */}
+      {/* Question Section - behavioral for first 5; coding split for Q6 */}
       <section id="question" style={{padding: '16px 16px 80px 16px', backgroundColor: '#1c1c1c'}}>
-        <div style={{width: '100vw', margin: '0'}}>
-          <div className="interview-card" style={{margin: '0', maxWidth: '100vw', padding: 0, backgroundColor: 'transparent', boxShadow: 'none'}}>
-            {/* Main layout: Left video area + Right transcripts */}
-            <div style={{display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: '12px', alignItems: 'stretch', marginBottom: '10px', height: 'calc(100vh - 160px)'}}>
-              {/* Video area filling almost the entire screen */}
-              <div ref={videoContainerRef} style={{position: 'relative', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden', height: '100%', boxShadow: '0 0 0 2px #4b3832 inset'}}>
-                {/* Question overlay removed since header is fixed above */}
-                {/* Controls overlay (mic/tts) */}
-                <div style={{position: 'absolute', top: '70px', left: '16px', display: 'flex', gap: '8px', zIndex: 2}}>
-                  <button
-                    onClick={speakQuestion}
-                    className="custom-button"
-                    style={{padding: '6px 10px', fontSize: '12px', backgroundColor: '#2a2a2a'}}
-                  >
-                    Play Question
-                  </button>
-                  {sttSupported ? (
-                    <button
-                      onClick={toggleListening}
-                      className="custom-button"
-                      style={{padding: '6px 10px', fontSize: '12px', backgroundColor: isListening ? '#4b3832' : '#2a2a2a'}}
-                    >
-                      {isListening ? 'Stop Mic' : 'Start Mic'}
-                    </button>
-                  ) : (
-                    <span style={{color: '#e0d5c5', fontSize: '12px'}}>Speech-to-text unsupported</span>
-                  )}
+        {currentQuestionIndex >= 5 ? (
+          <div style={{display: 'grid', gridTemplateColumns: 'minmax(420px, 46%) minmax(0, 1fr)', gap: '12px', height: 'calc(100vh - 160px)'}}>
+            <div className="glass-panel" style={{backgroundColor: '#2a2a2a', borderRadius: '12px', padding: '16px', overflowY: 'auto', boxShadow: '0 0 0 2px #4b3832 inset'}}>
+              <h3 style={{color: '#d4af37', marginBottom: '10px'}}>Problem</h3>
+              <div style={{color: '#e0d5c5', lineHeight: 1.5, whiteSpace: 'pre-wrap'}}>{currentQuestion?.text}</div>
+            </div>
+            <div style={{display: 'grid', gridTemplateRows: 'auto 1fr auto', backgroundColor: '#2a2a2a', borderRadius: '12px', boxShadow: '0 0 0 2px #4b3832 inset'}}>
+              <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid #4b3832'}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                  <label style={{color: '#e0d5c5'}}>Language</label>
+                  <select value={editorLanguage} onChange={(e) => setEditorLanguage(e.target.value)} style={{backgroundColor: '#1c1c1c', color: '#e0d5c5', border: '1px solid #4b3832', borderRadius: '8px', padding: '6px 8px'}}>
+                    <option value="javascript">JavaScript</option>
+                    <option value="python">Python (editor only)</option>
+                  </select>
                 </div>
-                <video ref={localVideoRef} autoPlay playsInline muted style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', backgroundColor: '#000', transform: 'scaleX(-1)', display: 'block'}}></video>
-                {/* Camera status indicator */}
-                <div style={{position: 'absolute', top: '12px', left: '12px', padding: '6px 12px', backgroundColor: cameraReady ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)', borderRadius: '6px', fontSize: '12px', color: 'white', fontWeight: 'bold', zIndex: 5}}>
-                  {cameraReady ? '● Camera Active' : '● Camera Inactive'}
-                  <br />
-                  <span style={{fontSize: '10px'}}>
-                    Stream: {activeStreamRef.current ? 'Yes' : 'No'} | 
-                    Video: {localVideoRef.current?.srcObject ? 'Attached' : 'Not attached'}
-                  </span>
-                </div>
-                {!cameraReady && (
-                  <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', background: 'rgba(0,0,0,0.85)', zIndex: 4}}>
-                    <p style={{color: '#e0d5c5', fontSize: '16px', fontWeight: 'bold'}}>{cameraError || 'Camera not started'}</p>
-                    <button className="custom-button" onClick={() => requestCamera()} style={{padding: '12px 24px', fontSize: '16px'}}>Enable Camera</button>
-                    {cameraDebug && <p style={{color: '#9aa0a6', fontSize: '12px', marginTop: '8px'}}>{cameraDebug}</p>}
-                  </div>
-                )}
-                {/* Interviewer small overlay */}
-                <div style={{position: 'absolute', top: '12px', right: '12px', width: '160px', height: '100px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #4b3832', backgroundColor: '#1c1c1c', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e0d5c5', fontSize: '12px', zIndex: 3}}>
-                  Interviewer Video
+                <div style={{display: 'flex', gap: '8px'}}>
+                  <button className="custom-button" onClick={handleRunCode}>Run</button>
+                  <button className="custom-button" onClick={handleResetCode} style={{backgroundColor: '#2a2a2a'}}>Reset</button>
                 </div>
               </div>
-
-              {/* Transcript sideover on the right */}
-              <aside style={{width: '320px', height: '100%', backgroundColor: '#2a2a2a', borderRadius: '12px', padding: '12px', overflowY: 'auto', boxShadow: '0 0 0 2px #4b3832 inset'}}>
-                <h3 style={{color: '#d4af37', marginBottom: '10px', textAlign: 'center'}}>Live Transcript</h3>
-                <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-                  <div>
-                    <h4 style={{color: '#e0d5c5', marginBottom: '6px'}}>Interviewer</h4>
-                    {interviewerTranscript.length === 0 ? (
-                      <p style={{color: '#9aa0a6', fontSize: '14px'}}>No messages yet.</p>
-                    ) : (
-                      interviewerTranscript.map((t, i) => (
-                        <p key={`int-${i}`} style={{color: '#e0d5c5', margin: '0 0 6px 0', lineHeight: '1.4'}}>{t}</p>
-                      ))
-                    )}
-                  </div>
-                  <div>
-                    <h4 style={{color: '#e0d5c5', marginBottom: '6px'}}>You</h4>
-                    {userTranscript.map((t, i) => (
-                      <p key={`usr-${i}`} style={{color: '#e0d5c5', margin: '0 0 6px 0', lineHeight: '1.4'}}>{t}</p>
-                    ))}
-                    {isListening && (
-                      <p style={{color: '#d4af37', margin: '0', lineHeight: '1.4'}}>{userTranscriptLive}</p>
-                    )}
-                  </div>
-                </div>
-              </aside>
+              <div style={{padding: '10px'}}>
+                <textarea value={editorCode} onChange={(e) => setEditorCode(e.target.value)} style={{width: '100%', height: '100%', minHeight: '320px', backgroundColor: '#1c1c1c', color: '#e0d5c5', border: '1px solid #4b3832', borderRadius: '8px', padding: '12px', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace', fontSize: '14px', lineHeight: 1.5}} placeholder={`// Start coding in ${editorLanguage}...`} />
+              </div>
+              <div style={{borderTop: '1px solid #4b3832', padding: '10px 12px', backgroundColor: '#1c1c1c', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px'}}>
+                <div style={{color: '#d4af37', marginBottom: '6px'}}>Output</div>
+                <pre style={{margin: 0, color: '#e0d5c5', whiteSpace: 'pre-wrap'}}>{runOutput}</pre>
+              </div>
             </div>
-
-            {/* Guidelines removed per simplified layout */}
-
-            {/* Textarea removed; transcription panel captures responses */}
           </div>
-        </div>
+        ) : (
+          <div style={{width: '100vw', margin: '0'}}>
+            <div className="interview-card" style={{margin: '0', maxWidth: '100vw', padding: 0, backgroundColor: 'transparent', boxShadow: 'none'}}>
+              <div style={{display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: '12px', alignItems: 'stretch', marginBottom: '10px', height: 'calc(100vh - 160px)'}}>
+                <div ref={videoContainerRef} style={{position: 'relative', backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden', height: '100%', boxShadow: '0 0 0 2px #4b3832 inset'}}>
+                  <div style={{position: 'absolute', top: '70px', left: '16px', display: 'flex', gap: '8px', zIndex: 2}}>
+                    <button onClick={speakQuestion} className="custom-button" style={{padding: '6px 10px', fontSize: '12px', backgroundColor: '#2a2a2a'}}>Play Question</button>
+                    {sttSupported ? (
+                      <button onClick={toggleListening} className="custom-button" style={{padding: '6px 10px', fontSize: '12px', backgroundColor: isListening ? '#4b3832' : '#2a2a2a'}}>{isListening ? 'Stop Mic' : 'Start Mic'}</button>
+                    ) : (
+                      <span style={{color: '#e0d5c5', fontSize: '12px'}}>Speech-to-text unsupported</span>
+                    )}
+                    <button onClick={() => navigator.mediaDevices?.getUserMedia && navigator.mediaDevices.getUserMedia({audio:true}).then(s=>s.getTracks().forEach(t=>t.stop())).catch(()=>{})} className="custom-button" style={{padding: '6px 10px', fontSize: '12px', backgroundColor: '#2a2a2a'}}>Enable Mic</button>
+                  </div>
+                  <video ref={localVideoRef} autoPlay playsInline muted style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', backgroundColor: '#000', transform: 'scaleX(-1)', display: 'block'}}></video>
+                  <div style={{position: 'absolute', top: '12px', left: '12px', padding: '6px 12px', backgroundColor: cameraReady ? 'rgba(34, 197, 94, 0.9)' : 'rgba(239, 68, 68, 0.9)', borderRadius: '6px', fontSize: '12px', color: 'white', fontWeight: 'bold', zIndex: 5}}>
+                    {cameraReady ? '● Camera Active' : '● Camera Inactive'}
+                    <br />
+                    <span style={{fontSize: '10px'}}>Stream: {activeStreamRef.current ? 'Yes' : 'No'} |  Video: {localVideoRef.current?.srcObject ? 'Attached' : 'Not attached'}</span>
+                  </div>
+                  {!cameraReady && (
+                    <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '12px', background: 'rgba(0,0,0,0.85)', zIndex: 4}}>
+                      <p style={{color: '#e0d5c5', fontSize: '16px', fontWeight: 'bold'}}>{cameraError || 'Camera not started'}</p>
+                      <button className="custom-button" onClick={() => requestCamera()} style={{padding: '12px 24px', fontSize: '16px'}}>Enable Camera</button>
+                      {cameraDebug && <p style={{color: '#9aa0a6', fontSize: '12px', marginTop: '8px'}}>{cameraDebug}</p>}
+                    </div>
+                  )}
+                  <div style={{position: 'absolute', top: '12px', right: '12px', width: '160px', height: '100px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #4b3832', backgroundColor: '#1c1c1c', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e0d5c5', fontSize: '12px', zIndex: 3}}>Interviewer Video</div>
+                </div>
+                <aside style={{width: '320px', height: '100%', backgroundColor: '#2a2a2a', borderRadius: '12px', padding: '12px', overflowY: 'auto', boxShadow: '0 0 0 2px #4b3832 inset'}}>
+                  <h3 style={{color: '#d4af37', marginBottom: '10px', textAlign: 'center'}}>Live Transcript</h3>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                    <div>
+                      <h4 style={{color: '#e0d5c5', marginBottom: '6px'}}>Interviewer</h4>
+                      {interviewerTranscript.length === 0 ? (
+                        <p style={{color: '#9aa0a6', fontSize: '14px'}}>No messages yet.</p>
+                      ) : (
+                        interviewerTranscript.map((t, i) => (<p key={`int-${i}`} style={{color: '#e0d5c5', margin: '0 0 6px 0', lineHeight: '1.4'}}>{t}</p>))
+                      )}
+                    </div>
+                    <div>
+                      <h4 style={{color: '#e0d5c5', marginBottom: '6px'}}>You</h4>
+                      {userTranscript.map((t, i) => (<p key={`usr-${i}`} style={{color: '#e0d5c5', margin: '0 0 6px 0', lineHeight: '1.4'}}>{t}</p>))}
+                      {isListening && (<p style={{color: '#d4af37', margin: '0', lineHeight: '1.4'}}>{userTranscriptLive}</p>)}
+                    </div>
+                  </div>
+                </aside>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Navigation Section - sticky bottom bar */}

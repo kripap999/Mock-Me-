@@ -140,15 +140,14 @@ const ReportPage = () => {
     <div className="min-h-screen academic-dark">
       {/* Navigation */}
       <div className="navbar" style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 30px', backgroundColor: '#1e1e1e', color: 'white', position: 'relative'}}>
-        <div className="nav-logo" style={{display: 'flex', alignItems: 'center', position: 'absolute', left: '10%'}}>
-          <span className="logo-text" style={{fontSize: '28px', fontFamily: 'Playfair Display, serif', fontWeight: '700', color: '#d4af37', textShadow: '2px 2px 4px rgba(0,0,0,0.3)'}}>AI Interview Coach</span>
+        <div className="nav-logo" style={{display: 'flex', alignItems: 'center', position: 'absolute', left: '10%', cursor: 'pointer'}} onClick={() => navigate('/?section=home')}>
+          <span className="logo-text" style={{fontSize: '28px', fontFamily: 'Playfair Display, serif', fontWeight: '700', color: '#d4af37', textShadow: '2px 2px 4px rgba(0,0,0,0.3)'}}>Mock Me?!</span>
         </div>
         
         <ul className="nav-right" style={{display: 'flex', listStyle: 'none', gap: '20px', marginLeft: 'auto'}}>
-          <li><a href="#home" style={{color: 'white', textDecoration: 'none', fontWeight: '500'}}>Home</a></li>
-          <li><a href="#about" style={{color: 'white', textDecoration: 'none', fontWeight: '500'}}>About</a></li>
-          <li><a href="#programs" style={{color: 'white', textDecoration: 'none', fontWeight: '500'}}>Programs</a></li>
-          <li><a href="#resources" style={{color: 'white', textDecoration: 'none', fontWeight: '500'}}>Resources</a></li>
+          <li><button className="custom-button" style={{backgroundColor: 'transparent', border: '1px solid #4b3832'}} onClick={() => navigate('/?section=about')}>About</button></li>
+          <li><button className="custom-button" style={{backgroundColor: 'transparent', border: '1px solid #4b3832'}} onClick={() => navigate('/?section=programs')}>Jobs</button></li>
+          <li><button className="custom-button" style={{backgroundColor: 'transparent', border: '1px solid #4b3832'}} onClick={() => navigate('/?section=resources')}>Resources</button></li>
         </ul>
       </div>
 
